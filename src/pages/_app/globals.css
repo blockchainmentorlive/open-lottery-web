@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-gray-600 text-white;
+}
+
+h1 {
+  @apply text-white;
+  @apply tracking-wider;
+  @apply text-2xl md:text-4xl;
+  @apply font-medium md:font-bold;
+}
+
+p {
+  @apply text-white text-sm my-4;
+}
