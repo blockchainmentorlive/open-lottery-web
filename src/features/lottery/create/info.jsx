@@ -1,4 +1,4 @@
-export default function Info({ children, ticketPrice }) {
+export default function Info({ ticketPrice }) {
   return (
     <div>
       <p className="text-lg font-medium">
@@ -13,16 +13,8 @@ export default function Info({ children, ticketPrice }) {
       <p className="mb-8">
         The best way to kick off a new lottery is to share it with your family,
         friends, coworkers and other channels! The more people, the bigger the
-        prize and thus your 2% is bigger too!
+        prize and thus your % is bigger too!
       </p>
-
-      <p>You set the ticket price to {ticketPrice} matic.</p>
-
-      {children}
-
-      <div className="text-white font-thin text-sm  text-center p-2">
-        May the force be with you,<span className="italic">always</span>.
-      </div>
     </div>
   );
 }

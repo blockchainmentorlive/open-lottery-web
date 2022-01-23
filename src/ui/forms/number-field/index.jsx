@@ -4,14 +4,12 @@ export default function NumberField({
   value,
   integerOnly = false,
   onChange = () => {},
-  min,
-  max,
   ...rest
 }) {
   function parse(val) {
-    const numbers = val.replace(/[^0-9]/g, "");
-    if (integerOnly) return numbers;
-    return numbers.replace(/[^\.]/g, "").replace(/(?<=(.*\..*))\./g, "");
+    if (integerOnly) return val.replace(/[^0-9]/g, "");
+
+    return val.replace(/[^0-9\.]/g, "");
   }
 
   return (
