@@ -1,19 +1,10 @@
-import { useEffect } from "react";
-import { useMoralis } from "react-moralis";
+import useWeb3 from "@/features/web3/hooks/use-web3";
 
 import LoggedOut from "./logged-out";
 import LoggedIn from "./logged-in";
 
 export default function Account() {
-  const { user, account, chainId, logout, authenticate } = useMoralis();
+  const { address } = useWeb3();
 
-  return (
-    <div>
-      {user && account ? (
-        <LoggedIn chainId={chainId} logout={logout} account={account} />
-      ) : (
-        <LoggedOut authenticate={authenticate} />
-      )}
-    </div>
-  );
+  return <div>{address ? <LoggedIn /> : <LoggedOut />}</div>;
 }

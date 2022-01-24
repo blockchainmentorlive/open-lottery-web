@@ -1,92 +1,149 @@
 import { useEffect, useState } from "react";
 
-import Moralis from "moralis";
 import { useRouter } from "next/router";
-import { useMoralis, useWeb3ExecuteFunction } from "react-moralis";
-import { Contract } from "@ethersproject/contracts";
-import { utils, ethers } from "ethers";
-import useInterval from "@/hooks/use-interval";
+
+import { ethers } from "ethers";
+import useWeb3 from "@/features/web3/hooks/use-web3";
+import useContract from "@/features/web3/hooks/use-contract";
+import { getEllipsisTxt } from "@/modules/string";
 
 import SecurePage from "@/ui/page/secure";
 
-import PrimaryButton from "@/ui/buttons/primary";
+import SmallButton from "@/ui/buttons/small";
 
 const abi = require("../../../contracts/lottery.sol/abi.json");
 
 export default function Play({}) {
+  const [ticketPrice, setTicketPrice] = useState(undefined);
+  const [lastHash, setLastHash] = useState(undefined);
+  const [busy, setBusy] = useState(false);
+  const [confirmed, setConfirmed] = useState(true);
+  const [tickets, setTickets] = useState([]);
+  const [ticketsSold, setTicketsSold] = useState(0);
+
   const {
     query: { contractAddress },
   } = useRouter();
 
-  const [ticketPrice, setTicketPrice] = useState(undefined);
-  const [intervalDelay, setIntervalDelay] = useState(5000);
-  const [boughtHash, setBoughtHash] = useState(undefined);
-  const [busy, setBusy] = useState(false);
-  const [confirmed, setConfirmed] = useState(false);
-  const { user, account } = useMoralis();
-  const moralis = useWeb3ExecuteFunction();
-
-  useInterval(() => {
-    checkForConfirmation();
-  }, intervalDelay);
+  const { onTicketSold, address, provider } = useWeb3();
+  const { onTicketEvent, contract } = useContract({
+    address: contractAddress,
+    abi,
+    providerOrSigner: provider,
+  });
 
   useEffect(async () => {
-    if (!contractAddress) return;
+    if (!contract) return;
 
-    await moralis.fetch({
-      params: {
-        abi,
-        contractAddress,
-        functionName: "ticketPrice",
-      },
-      onSuccess: (ticketPrice) => {
-        const price = utils.formatEther(ticketPrice.toString());
-        console.dir(price);
-        setTicketPrice(price);
-      },
-    });
-  }, [contractAddress]);
+    setTicketPrice(
+      ethers.utils.formatEther((await contract.ticketPrice()).toString())
+    );
 
-  async function checkForConfirmation() {
-    const TicketPurchase = Moralis.Object.extend("TicketPurchases");
-    const query = new Moralis.Query(TicketPurchase);
-    try {
-      await query.equalTo("transaction_hash", boughtHash);
-    } catch {}
-    const results = await query.find();
-    if (results.count == 0) return;
-    setConfirmed(true);
-    setBusy(false);
-    setIntervalDelay(null);
+    updateSoldTickets();
+  }, [address]);
+
+  useEffect(async () => {
+    if (!contract || !lastHash) return;
+
+    setTicketPrice(
+      ethers.utils.formatEther((await contract.ticketPrice()).toString())
+    );
+
+    onTicketEvent(handleNewEvent);
+  }, [address, lastHash]);
+
+  async function updateSoldTickets() {
+    setTickets(await contract.tickets());
+    setTicketsSold(parseInt((await contract.ticketsSold()).toString()));
+  }
+
+  function toWei(ticketprice) {
+    return ethers.utils.parseEther(ticketprice);
+  }
+
+  async function handleNewEvent(to, amount, event) {
+    updateSoldTickets();
+    if (lastHash === event.transactionHash) {
+      setBusy(false);
+      setConfirmed(true);
+      onTicketSold();
+    }
   }
 
   async function buyTicket() {
     setBusy(true);
-    const msgValue = utils.parseEther(ticketPrice).toString();
+    const tx = await contract
+      .connect(provider.getSigner())
+      .buyTicket({ value: toWei(ticketPrice) });
 
-    await moralis.fetch({
-      params: {
-        abi,
-        contractAddress,
-        functionName: "buyTicket",
-        msgValue,
-      },
-      onSuccess: (data) => setBoughtHash(data.hash),
-    });
+    setLastHash(tx.hash);
+    setConfirmed(false);
   }
+
+  const reducedTickets = tickets.reduce((acc, address) => {
+    return acc[address]
+      ? { ...acc, [address]: parseInt(acc[address]) + 1 }
+      : { ...acc, [address]: 1 };
+  }, {});
 
   return (
     <SecurePage>
-      <div className="w-1/2 mx-auto rounded-2xl bg-white p-8 flex justify-center text-gray-700">
+      <div className="w-1/2 mx-auto rounded-2xl bg-white p-8 flex-col  text-gray-700">
+        <h1>Welcome to the lottery</h1>
+
         <div>
-          <h2>Great, you created a Lottery!</h2>
+          <p className="mt-6 mb-2">
+            There have been {ticketsSold} tickets sold so far! Join the fun and
+            buy one yourself.
+          </p>
 
-          <p>Before anyone else can buy a ticket, you have to buy yours!</p>
-
-          <PrimaryButton busy={busy} onClick={buyTicket}>
-            Buy Ticket for {ticketPrice} MATIC
-          </PrimaryButton>
+          <p className="font-medium text-lg">
+            The total winnable pot is up to {ticketPrice * ticketsSold} MATIC
+          </p>
         </div>
+
+        <div className="border rounded shadow px-8 py-4 my-4 ">
+          <div className="flex items-center">
+            <div className="flex-grow ">
+              <h2>
+                {ticketsSold === 0 ? (
+                  <span>There have been no tickets sold yet</span>
+                ) : (
+                  <span>Lottery tickets sold</span>
+                )}
+              </h2>
+            </div>
+            <div>
+              <SmallButton busy={busy} onClick={buyTicket}>
+                Buy a Ticket for {ticketPrice} MATIC
+              </SmallButton>
+            </div>
+          </div>
+
+          {Object.entries(reducedTickets).map(([address, count]) => (
+            <div className="flex border-b border-green-200 p-2">
+              <div className="flex-grow">{getEllipsisTxt(address)}</div>
+              <div>{count}</div>
+            </div>
+          ))}
+        </div>
+
+        {busy && confirmed && (
+          <div className="bg-blue-400 my-2 p-4  text-white">
+            <p>
+              Metamask will open up and ask you to approve this transaction. If
+              it doesn't open on it's own, click the icons, and confirm the
+              transaction.
+            </p>
+          </div>
+        )}
+
+        {busy && !confirmed && (
+          <div className="bg-pink-400 my-2 p-4  text-white">
+            Your ticket purchase is being confirmed on the blockchain. Please
+            wait a few moments for this action to complete.
+          </div>
+        )}
       </div>
     </SecurePage>
   );

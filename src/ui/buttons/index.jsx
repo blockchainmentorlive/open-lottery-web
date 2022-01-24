@@ -12,7 +12,7 @@ export default function Button({
   ...rest
 }) {
   const [clicked, setClicked] = useState(false);
-  const staticClassNames = `scale-100 py-2 px-6 md:py-3 md:px-10 text-sm md:text-base`;
+  const staticClassNames = `scale-100 py-2 px-6 md:py-3 md:px-10 `;
   const disabledClassNames = `cursor-not-allowed opacity-60`;
   const animateClassNames = `transition transform duration-600 `;
   const clickedClassNames = `scale-110`;
@@ -24,8 +24,6 @@ export default function Button({
     setTimeout(fn, 500);
     return () => clearTimeout(fn);
   }, [clicked]);
-
-  console.dir(busy);
 
   return (
     <button

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useMoralis } from "react-moralis";
+import useWeb3 from "@/features/web3/hooks/use-web3";
+import useChain from "@/features/web3/hooks/use-chain";
 
 import Modal from "@/ui/modal";
 import Image from "next/image";
@@ -10,8 +11,7 @@ export function LogInForm({
   isModalVisible = true,
   setIsModalVisible = () => {},
 }) {
-  const { authenticate } = useMoralis();
-
+  const { authenticate } = useWeb3();
   return (
     <Modal isOpen={isModalVisible} close={() => setIsModalVisible(false)}>
       <h2 className="text-lg my-4 font-medium">

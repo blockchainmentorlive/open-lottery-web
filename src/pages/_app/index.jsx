@@ -1,12 +1,11 @@
-import { MoralisProvider } from "react-moralis";
+import Web3Provider from "@/features/web3";
+
 import "./globals.css";
 
 export default function App({ Component, pageProps }) {
   return (
-    <MoralisProvider
-      appId={process.env.NEXT_PUBLIC_MORALIS_APP_ID}
-      serverUrl={process.env.NEXT_PUBLIC_MORALIS_SERVER_URL}>
+    <Web3Provider>
       <Component {...pageProps} />
-    </MoralisProvider>
+    </Web3Provider>
   );
 }

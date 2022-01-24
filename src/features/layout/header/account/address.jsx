@@ -1,17 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { useMoralis } from "react-moralis";
-
 import { getEllipsisTxt } from "@/modules/string";
 
-function Address(props) {
-  const { account, isAuthenticated } = useMoralis();
-  const [address, setAddress] = useState();
+function Address({ address, size, copyable }) {
   const [isClicked, setIsClicked] = useState(false);
-
-  useEffect(() => {
-    setAddress(props?.address || (isAuthenticated && account));
-  }, [account, isAuthenticated, props]);
 
   if (!address) return "";
 
@@ -41,9 +33,9 @@ function Address(props) {
 
   return (
     <div className="flex items-center">
-      <div>{props.size ? getEllipsisTxt(address, props.size) : address}</div>
+      <div>{getEllipsisTxt(address, 6)}</div>
 
-      <div>{props.copyable && (isClicked ? <Check /> : <Copy />)}</div>
+      <div>{copyable && (isClicked ? <Check /> : <Copy />)}</div>
     </div>
   );
 }
