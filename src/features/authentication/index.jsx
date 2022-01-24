@@ -1,4 +1,3 @@
-import { useState } from "react";
 import useWeb3 from "@/features/web3/hooks/use-web3";
 import useChain from "@/features/web3/hooks/use-chain";
 
@@ -7,7 +6,17 @@ import Image from "next/image";
 
 import { connectors } from "./config";
 
-export function LogInForm({
+export function AuthButton({ label, onClick }) {
+  return (
+    <button
+      className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md bg-opacity-20 hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+      onClick={onClick}>
+      {label}
+    </button>
+  );
+}
+
+export default function Authentication({
   isModalVisible = true,
   setIsModalVisible = () => {},
 }) {
@@ -42,24 +51,5 @@ export function LogInForm({
           ))}
       </div>
     </Modal>
-  );
-}
-
-export default function LoggedOut({}) {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
-  return (
-    <>
-      <button
-        className="flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md bg-opacity-20 hover:bg-opacity-30 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
-        onClick={() => setIsModalVisible(true)}>
-        Authenticate
-      </button>
-
-      <LogInForm
-        isModalVisible={isModalVisible}
-        setIsModalVisible={setIsModalVisible}
-      />
-    </>
   );
 }

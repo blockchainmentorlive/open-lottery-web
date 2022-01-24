@@ -9,7 +9,10 @@ export default function Web3Provider({ children }) {
   const [balance, setBalance] = useState(undefined);
 
   useEffect(async () => {
-    setProvider(new ethers.providers.Web3Provider(window.ethereum, "any"));
+    setProvider(
+      new ethers.providers.Web3Provider(window.ethereum, "any") ||
+        (await ethers.getDefaultProvider())
+    );
   }, []);
 
   useEffect(() => {
@@ -37,7 +40,6 @@ export default function Web3Provider({ children }) {
   }
 
   function disconnect() {
-    console.log("disconnect");
     setAddress(undefined);
     setBalance(0);
   }

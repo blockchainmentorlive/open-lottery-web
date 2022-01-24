@@ -1,56 +1,112 @@
-import { format } from "date-fns";
-import Eth from "@/ui/units/eth";
+import { useEffect, useState } from "react";
 
-import Sumamry from "./summary";
-import Tickets from "./tickets";
-import Fees from "./fees";
+import { useRouter } from "next/router";
 
-export default function PlayLottery({
-  owner,
-  ticketPrice,
-  minPlayers,
-  maxPlayers,
-  serviceFeePercent,
-  platformFeePercent,
-  tickets,
-  startAt,
-  endAt,
-}) {
-  function formatDateTime(t) {
-    return format(t, "yyyy/mm/dd h:mmaaa");
+import { ethers } from "ethers";
+
+import useWeb3 from "@/features/web3/hooks/use-web3";
+import useContract from "@/features/web3/hooks/use-contract";
+import Game from "./game";
+
+const abi = require("../../../contracts/lottery.sol/abi.json");
+
+export default function PlayLottery({}) {
+  const [ticketPrice, setTicketPrice] = useState(undefined);
+  const [lastHash, setLastHash] = useState(undefined);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [confirmed, setConfirmed] = useState(true);
+  const [ticketsSold, setTicketsSold] = useState(0);
+  const [tickets, setTickets] = useState([]);
+
+  const {
+    query: { contractAddress },
+  } = useRouter();
+
+  const { onTicketSold, address, provider } = useWeb3();
+
+  const { onTicketEvent, contract } = useContract({
+    address: contractAddress,
+    abi,
+    providerOrSigner: provider,
+  });
+
+  useEffect(() => {
+    console.dir(contract);
+  }, [contract]);
+
+  useEffect(() => {
+    console.dir(provider);
+  }, [provider]);
+
+  useEffect(async () => {
+    if (!contract) return;
+
+    setTicketPrice(
+      ethers.utils.formatEther((await contract.ticketPrice()).toString())
+    );
+
+    updateSoldTickets();
+    setLoading(false);
+  }, [contract, address]);
+
+  useEffect(async () => {
+    if (!address || !lastHash) return;
+
+    setTicketPrice(
+      ethers.utils.formatEther((await contract.ticketPrice()).toString())
+    );
+
+    onTicketEvent(handleNewEvent);
+  }, [address, lastHash]);
+
+  async function updateSoldTickets() {
+    setTickets(await contract.tickets());
+    setTicketsSold(parseInt((await contract.ticketsSold()).toString()));
   }
-  const aggTickets = tickets.reduce((acc, ticket) => {
-    if (!acc[ticket]) {
-      acc[ticket] = { ticketCount: 0 };
-    }
-    acc[ticket].ticketCount = acc[ticket].ticketCount + 1;
-    return acc;
-  }, {});
 
-  const prize = tickets.reduce((acc, _) => acc + 1, 0) * ticketPrice;
+  function toWei(ticketprice) {
+    return ethers.utils.parseEther(ticketprice);
+  }
+
+  async function handleNewEvent(to, amount, event) {
+    updateSoldTickets();
+    if (lastHash === event.transactionHash) {
+      setBusy(false);
+      setConfirmed(true);
+      onTicketSold();
+    }
+  }
+
+  async function buyTicket() {
+    setBusy(true);
+    const tx = await contract
+      .connect(provider.getSigner())
+      .buyTicket({ value: toWei(ticketPrice) });
+
+    setLastHash(tx.hash);
+    setConfirmed(false);
+  }
+
+  const gameProps = {
+    ticketPrice,
+    ticketsSold,
+    busy,
+    confirmed,
+    tickets,
+    address,
+    buyTicket,
+  };
+
   return (
     <div>
-      <Sumamry
-        {...{
-          "Prize (minus fees)": (
-            <Eth
-              wei={prize * (serviceFeePercent + platformFeePercent) - prize}
-            />
-          ),
-          "Started at": formatDateTime(startAt),
-          "Ends” at": formatDateTime(endAt),
-          "Ticket price": <Eth wei={ticketPrice} />,
-          Players: `${minPlayers} - ${maxPlayers}`,
-          Owner: owner,
-        }}
-      />
+      <h1>Welcome to the lottery</h1>
 
-      <Fees
-        serviceFeePercent={serviceFeePercent}
-        platformFeePercent={platformFeePercent}
-      />
-
-      <Tickets tickets={aggTickets} ticketPrice={ticketPrice} />
+      {!loading ? (
+        <Game {...gameProps} />
+      ) : (
+        <div>Loading game from the blockchain....</div>
+      )}
     </div>
   );
 }

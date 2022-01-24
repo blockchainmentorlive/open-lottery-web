@@ -3,11 +3,11 @@ import useWeb3 from "@/features/web3/hooks/use-web3";
 import useChain from "@/features/web3/hooks/use-chain";
 
 import Modal from "@/ui/modal";
-import Address from "./address";
+import Address from "@/ui/address";
 import { getExplorer } from "@/modules/networks";
 import { getEllipsisTxt } from "@/modules/string";
 
-export default function LoggedIn({}) {
+export default function LogOut({}) {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const { address, disconnect } = useWeb3();

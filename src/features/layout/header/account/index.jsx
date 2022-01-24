@@ -1,10 +1,10 @@
 import useWeb3 from "@/features/web3/hooks/use-web3";
 
-import LoggedOut from "./logged-out";
-import LoggedIn from "./logged-in";
+import LogIn from "@/features/authentication/log-in";
+import LogOut from "@/features/authentication/log-out";
 
 export default function Account() {
   const { address } = useWeb3();
 
-  return <div>{address ? <LoggedIn /> : <LoggedOut />}</div>;
+  return <div>{address ? <LogOut /> : <LogIn />}</div>;
 }

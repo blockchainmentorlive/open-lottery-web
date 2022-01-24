@@ -1,30 +1,45 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
-import Info from "./info";
-import BuyTicketForm from "./form";
+import useWeb3 from "@/features/web3/hooks/use-web3";
+import NumberField from "@/ui/forms/number-field";
 
-const MIN_TICKET_PRICE = 3;
+export default function CreateContract({}) {
+  const [ticketPrice, setTicketPrice] = useState(0.001);
 
-export default function CreateLottery({ maticPrice }) {
-  const [ticketPrice, setTicketPrice] = useState(MIN_TICKET_PRICE);
+  const router = useRouter();
+
+  async function createLottery() {
+    const res = await fetch("/api/lottery/create", {
+      method: "POST",
+      body: JSON.stringify({ ticketPrice }),
+    });
+    const json = await res.json();
+
+    router.push(`/play/${json.address}`);
+  }
 
   return (
     <>
-      <div className="mt-10 md:mt-20 md:mx-20">
-        <h1>
-          Create your own lottery, promote it, and collect a percentage of the
-          total ticket revenue.
-        </h1>
-        <p>The current price for MATIC is ${maticPrice} USD</p>
+      <div className="flex items-center space-x-2">
+        <div className="w-32">
+          <label>Ticket price</label>
+        </div>
+        <div className="w-32 flex items-center space-x-2">
+          <NumberField
+            value={ticketPrice}
+            onChange={(val) => setTicketPrice(val)}
+          />
+          <div>MATIC</div>
+        </div>
       </div>
-      <div className="text-gray-900 md:flex md:justify-around">
-        <div className="md:w-3/5 md:mx-20 items-start">
-          <BuyTicketForm {...{ ticketPrice, setTicketPrice }} />
-        </div>
 
-        <div className="md:w-2/5 md:mx-20">
-          <Info ticketPrice={ticketPrice} />
-        </div>
+      <div className="my-4">
+        <button
+          className="border rounded py-2 px-10 bg-gray-600"
+          onClick={createLottery}>
+          Create your lottery
+        </button>
       </div>
     </>
   );
